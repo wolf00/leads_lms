@@ -1,0 +1,20 @@
+{
+    "firstName": "Rahul",
+    "lastName": "poop",
+    "email": "poopsuop@poop.com",
+    "contact": "45670",
+    "source": "CD",
+    "meta": [
+        {
+            "key": "sup",
+            "value": "whatup"
+        }
+    ],
+    "templateValues": [
+        {
+            "key": "poopMane",
+            "value": "tatti"
+        }
+    ],
+    "campaignTag": "camp-1101"
+}
