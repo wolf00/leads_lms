@@ -5,8 +5,8 @@ import (
 
 	"github.com/micro/go-micro/v2"
 	"github.com/micro/go-micro/v2/server"
-	user "github.com/wolf00/golang_lms/user/proto/user"
-	"github.com/wolf00/golang_lms/leads/constants"
+	"github.com/wolf00/leads_lms/constants"
+	user "github.com/wolf00/user_lms/proto/user"
 )
 
 type userKey struct{}

@@ -3,7 +3,7 @@ package db
 import (
 	"context"
 
-	"github.com/wolf00/golang_lms/leads/constants"
+	"github.com/wolf00/leads_lms/constants"
 
 	log "github.com/micro/go-micro/v2/logger"
 	"go.mongodb.org/mongo-driver/mongo"

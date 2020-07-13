@@ -4,11 +4,11 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/wolf00/golang_lms/campaign/db/models"
-	campaignProto "github.com/wolf00/golang_lms/campaign/proto/campaign"
-	"github.com/wolf00/golang_lms/leads/client"
-	"github.com/wolf00/golang_lms/leads/constants"
-	"github.com/wolf00/golang_lms/leads/utilities"
+	"github.com/wolf00/campaign_lms/db/models"
+	campaignProto "github.com/wolf00/campaign_lms/proto/campaign"
+	"github.com/wolf00/leads_lms/client"
+	"github.com/wolf00/leads_lms/constants"
+	"github.com/wolf00/leads_lms/utilities"
 
 	"github.com/micro/go-micro/debug/log"
 	"github.com/micro/go-micro/errors"

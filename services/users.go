@@ -3,10 +3,10 @@ package services
 import (
 	"context"
 
-	"github.com/wolf00/golang_lms/leads/client"
-	"github.com/wolf00/golang_lms/leads/constants"
-	"github.com/wolf00/golang_lms/user/db/models"
-	userProto "github.com/wolf00/golang_lms/user/proto/user"
+	"github.com/wolf00/leads_lms/client"
+	"github.com/wolf00/leads_lms/constants"
+	"github.com/wolf00/user_lms/db/models"
+	userProto "github.com/wolf00/user_lms/proto/user"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 
 	"github.com/micro/go-micro/errors"

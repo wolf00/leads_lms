@@ -6,14 +6,14 @@ import (
 	"strings"
 	"time"
 
-	"github.com/wolf00/golang_lms/leads/constants"
-	"github.com/wolf00/golang_lms/leads/db"
-	"github.com/wolf00/golang_lms/leads/db/models"
+	"github.com/wolf00/leads_lms/constants"
+	"github.com/wolf00/leads_lms/db"
+	"github.com/wolf00/leads_lms/db/models"
 
-	lead_template_models "github.com/wolf00/golang_lms/lead_template/db/models"
+	lead_template_models "github.com/wolf00/lead_template_lms/db/models"
 
-	leads "github.com/wolf00/golang_lms/leads/proto/leads"
-	"github.com/wolf00/golang_lms/leads/utilities"
+	leads "github.com/wolf00/leads_lms/proto/leads"
+	"github.com/wolf00/leads_lms/utilities"
 
 	"github.com/micro/go-micro/v2/util/log"
 	"go.mongodb.org/mongo-driver/bson"

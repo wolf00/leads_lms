@@ -5,8 +5,8 @@ import (
 
 	"github.com/micro/go-micro/v2"
 	"github.com/micro/go-micro/v2/server"
-	"github.com/wolf00/golang_lms/leads/constants"
-	organization "github.com/wolf00/golang_lms/user/proto/organization"
+	"github.com/wolf00/leads_lms/constants"
+	organization "github.com/wolf00/user_lms/proto/organization"
 )
 
 type organizationKey struct{}

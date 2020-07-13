@@ -3,8 +3,8 @@ package handler
 import (
 	"context"
 
-	leads "github.com/wolf00/golang_lms/leads/proto/leads"
-	"github.com/wolf00/golang_lms/leads/services"
+	leads "github.com/wolf00/leads_lms/proto/leads"
+	"github.com/wolf00/leads_lms/services"
 )
 
 // LeadsRequestHandler type def

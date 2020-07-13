@@ -5,8 +5,8 @@ import (
 
 	"github.com/micro/go-micro/v2"
 	"github.com/micro/go-micro/v2/server"
-	"github.com/wolf00/golang_lms/leads/constants"
-	source "github.com/wolf00/golang_lms/user/proto/source"
+	"github.com/wolf00/leads_lms/constants"
+	source "github.com/wolf00/user_lms/proto/source"
 )
 
 type sourceKey struct{}

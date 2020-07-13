@@ -5,8 +5,8 @@ import (
 
 	"github.com/micro/go-micro/v2"
 	"github.com/micro/go-micro/v2/server"
-	campaign "github.com/wolf00/golang_lms/campaign/proto/campaign"
-	"github.com/wolf00/golang_lms/leads/constants"
+	campaign "github.com/wolf00/campaign_lms/proto/campaign"
+	"github.com/wolf00/leads_lms/constants"
 )
 
 type campaignKey struct{}

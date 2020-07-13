@@ -1,12 +1,12 @@
 package main
 
 import (
-	"github.com/wolf00/golang_lms/leads/handler"
-	leads "github.com/wolf00/golang_lms/leads/proto/leads"
+	"github.com/wolf00/leads_lms/handler"
+	leads "github.com/wolf00/leads_lms/proto/leads"
 
 	"github.com/micro/go-micro/v2"
 	log "github.com/micro/go-micro/v2/logger"
-	"github.com/wolf00/golang_lms/leads/client"
+	"github.com/wolf00/leads_lms/client"
 )
 
 func main() {

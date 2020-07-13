@@ -4,10 +4,10 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/wolf00/golang_lms/leads/client"
-	"github.com/wolf00/golang_lms/leads/constants"
-	"github.com/wolf00/golang_lms/user/db/models"
-	sourceProto "github.com/wolf00/golang_lms/user/proto/source"
+	"github.com/wolf00/leads_lms/client"
+	"github.com/wolf00/leads_lms/constants"
+	"github.com/wolf00/user_lms/db/models"
+	sourceProto "github.com/wolf00/user_lms/proto/source"
 
 	"github.com/micro/go-micro/errors"
 	"github.com/micro/go-micro/util/log"
