@@ -43,6 +43,8 @@ func NewLeadsEndpoints() []*api.Endpoint {
 
 type LeadsService interface {
 	NewLead(ctx context.Context, in *NewLeadRequest, opts ...client.CallOption) (*NewLeadResponse, error)
+	NewLeadQueued(ctx context.Context, in *NewLeadRequest, opts ...client.CallOption) (*NewLeadResponse, error)
+	NewLeadByLeadStatusID(ctx context.Context, in *NewLeadEvent, opts ...client.CallOption) (*NewLeadResponse, error)
 }
 
 type leadsService struct {
@@ -67,15 +69,39 @@ func (c *leadsService) NewLead(ctx context.Context, in *NewLeadRequest, opts ...
 	return out, nil
 }
 
+func (c *leadsService) NewLeadQueued(ctx context.Context, in *NewLeadRequest, opts ...client.CallOption) (*NewLeadResponse, error) {
+	req := c.c.NewRequest(c.name, "Leads.NewLeadQueued", in)
+	out := new(NewLeadResponse)
+	err := c.c.Call(ctx, req, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *leadsService) NewLeadByLeadStatusID(ctx context.Context, in *NewLeadEvent, opts ...client.CallOption) (*NewLeadResponse, error) {
+	req := c.c.NewRequest(c.name, "Leads.NewLeadByLeadStatusID", in)
+	out := new(NewLeadResponse)
+	err := c.c.Call(ctx, req, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // Server API for Leads service
 
 type LeadsHandler interface {
 	NewLead(context.Context, *NewLeadRequest, *NewLeadResponse) error
+	NewLeadQueued(context.Context, *NewLeadRequest, *NewLeadResponse) error
+	NewLeadByLeadStatusID(context.Context, *NewLeadEvent, *NewLeadResponse) error
 }
 
 func RegisterLeadsHandler(s server.Server, hdlr LeadsHandler, opts ...server.HandlerOption) error {
 	type leads interface {
 		NewLead(ctx context.Context, in *NewLeadRequest, out *NewLeadResponse) error
+		NewLeadQueued(ctx context.Context, in *NewLeadRequest, out *NewLeadResponse) error
+		NewLeadByLeadStatusID(ctx context.Context, in *NewLeadEvent, out *NewLeadResponse) error
 	}
 	type Leads struct {
 		leads
@@ -90,4 +116,12 @@ type leadsHandler struct {
 
 func (h *leadsHandler) NewLead(ctx context.Context, in *NewLeadRequest, out *NewLeadResponse) error {
 	return h.LeadsHandler.NewLead(ctx, in, out)
+}
+
+func (h *leadsHandler) NewLeadQueued(ctx context.Context, in *NewLeadRequest, out *NewLeadResponse) error {
+	return h.LeadsHandler.NewLeadQueued(ctx, in, out)
+}
+
+func (h *leadsHandler) NewLeadByLeadStatusID(ctx context.Context, in *NewLeadEvent, out *NewLeadResponse) error {
+	return h.LeadsHandler.NewLeadByLeadStatusID(ctx, in, out)
 }

@@ -6,7 +6,10 @@ import (
 
 	"github.com/micro/go-micro/v2"
 	log "github.com/micro/go-micro/v2/logger"
+
+	// "github.com/micro/go-micro/v2/server"
 	"github.com/wolf00/leads_lms/client"
+	"github.com/wolf00/leads_lms/subscriber"
 )
 
 func main() {
@@ -23,13 +26,14 @@ func main() {
 		micro.WrapHandler(client.OrganizationWrapper(service)),
 		micro.WrapHandler(client.SourceWrapper(service)),
 		micro.WrapHandler(client.UserWrapper(service)),
+		micro.WrapHandler(client.NewLeadPublisherWrapper(service)),
 	)
 
 	// Register Handler
 	leads.RegisterLeadsHandler(service.Server(), new(handler.LeadsRequestHandler))
 
 	// Register Struct as Subscriber
-	// micro.RegisterSubscriber("go.micro.service.leads", service.Server(), new(subscriber.Leads))
+	micro.RegisterSubscriber("go.micro.service.leads.NewLead", service.Server(), new(subscriber.NewLeadHandler))
 
 	// Run service
 	if err := service.Run(); err != nil {

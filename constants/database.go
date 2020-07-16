@@ -10,6 +10,7 @@ const (
 // Collection names
 const (
 	Leads         = "leads"
+	LeadStatus    = "lead_status"
 	Campaigns     = "campaigns"
 	LeadTemplates = "lead_templates"
 	Sources       = "sources"

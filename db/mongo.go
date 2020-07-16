@@ -30,3 +30,8 @@ func connectMongo(ctx context.Context) *mongo.Database {
 func Leads(ctx context.Context) *mongo.Collection {
 	return connectMongo(ctx).Collection(constants.Leads)
 }
+
+// LeadStatus is used to retrieve collection from database
+func LeadStatus(ctx context.Context) *mongo.Collection {
+	return connectMongo(ctx).Collection(constants.LeadStatus)
+}

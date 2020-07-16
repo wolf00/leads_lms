@@ -12,59 +12,138 @@ import (
 
 	lead_template_models "github.com/wolf00/lead_template_lms/db/models"
 
+	"github.com/micro/go-micro/v2/util/log"
 	leads "github.com/wolf00/leads_lms/proto/leads"
 	"github.com/wolf00/leads_lms/utilities"
-
-	"github.com/micro/go-micro/v2/util/log"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
-// NewLeadService Handler
-type NewLeadService struct {
+// LeadService Handler
+type LeadService struct {
 }
 
-// NewLead create
-func (e *NewLeadService) NewLead(ctx context.Context, req *leads.NewLeadRequest, rsp *leads.NewLeadResponse) error {
+func (e *LeadService) leadRequest2LeadStatus(req *leads.NewLeadRequest) models.LeadStatus {
+	var leadStatus models.LeadStatus
+	leadStatus.LastName = req.LastName
+	leadStatus.LeadSource = req.Source
+	leadStatus.CampaignTag = req.CampaignTag
+	leadStatus.Contact = req.Contact
+	leadStatus.Email = req.Email
+	leadStatus.FirstName = req.FirstName
+	leadStatus.LastName = req.LastName
+	leadStatus.Meta = req.Meta
+	leadStatus.TemplateValues = req.TemplateValues
+	return leadStatus
+}
+
+func leadStatusCaptureError(ctx context.Context, leadStatusID primitive.ObjectID, err error) error {
+	return leadStatusCapture(ctx, leadStatusID, models.Failed, "failed to add the lead", err)
+}
+
+func leadStatusCaptureSuccess(ctx context.Context, leadStatusID primitive.ObjectID) error {
+	return leadStatusCapture(ctx, leadStatusID, models.Failed, "lead camptured successfully", nil)
+}
+
+func leadStatusCapture(ctx context.Context, leadStatusID primitive.ObjectID, status string, message string, stacktrace error) error {
+	var errMessage string
+	if stacktrace != nil {
+		errMessage = stacktrace.Error()
+	}
+	updateData := bson.D{
+		{"$set", bson.D{
+			{"stacktrace", errMessage},
+			{"message", message},
+			{"status", status},
+		}},
+	}
+	_, dberr := updateLeadStatus(ctx, leadStatusID, updateData)
+	if dberr != nil {
+		log.Error(dberr)
+	}
+
+	return stacktrace
+}
+
+func (e *LeadService) NewLeadStatus(ctx context.Context, req *leads.NewLeadRequest) (*mongo.InsertOneResult, error) {
 	validationErrors := e.validateLead(req)
 	if len(validationErrors) > 0 {
-		e.failure(strings.Join(validationErrors, ", "), rsp)
-		return nil
+		return nil, fmt.Errorf(strings.Join(validationErrors, ", "))
 	}
-	newLead, err := e.lead(ctx, req)
+	leadStatus := e.leadRequest2LeadStatus(req)
+	return createLeadStatus(ctx, leadStatus)
+}
+
+func (e *LeadService) LeadStatusFromID(ctx context.Context, leadStatusID string) (models.LeadStatus, error) {
+	var leadStatus models.LeadStatus
+	dbID, err := primitive.ObjectIDFromHex(leadStatusID)
+	if err != nil {
+		log.Error(err)
+		return leadStatus, err
+	}
+	helper := db.LeadStatus(ctx)
+
+	err = helper.FindOne(ctx, bson.M{"_id": dbID}).Decode(&leadStatus)
+	if err != nil {
+		log.Error(err)
+		return leadStatus, err
+	}
+
+	return leadStatus, nil
+}
+
+func (e *LeadService) CreateNewLead(ctx context.Context, req *leads.NewLeadRequest) error {
+	validationErrors := e.validateLead(req)
+	if len(validationErrors) > 0 {
+		return fmt.Errorf(strings.Join(validationErrors, ", "))
+	}
+	leadStatus := e.leadRequest2LeadStatus(req)
+	leadStatusID, err := createLeadStatus(ctx, leadStatus)
 	if err != nil {
 		return err
 	}
+	leadStatus.ID = leadStatusID.InsertedID.(primitive.ObjectID)
+	return e.NewLead(ctx, leadStatus)
+}
+
+// NewLead create
+func (e *LeadService) NewLead(ctx context.Context, leadStatus models.LeadStatus) error {
+	newLead, err := leadFromLeadStatus(ctx, leadStatus)
+	leadStatusID := leadStatus.ID
+	log.Info("after lead verifed")
+	if err != nil {
+		return leadStatusCaptureError(ctx, leadStatusID, err)
+	}
 	existingLead, err := leadByFilter(ctx, bson.M{"contact": newLead.Contact, "email": newLead.Email})
 	if err == nil {
-		return e.updateExistingLead(ctx, existingLead, newLead, rsp)
+		return updateExistingLead(ctx, leadStatusID, existingLead, newLead)
 	}
 	existingLeadWithContact, err := leadByFilter(ctx, bson.M{"contact": newLead.Contact})
 	if err == nil {
 		newLead.Meta[0].Meta = append(newLead.Meta[0].Meta, models.KeyValue{Key: "contact", Value: newLead.Contact})
-		return e.updateExistingLead(ctx, existingLeadWithContact, newLead, rsp)
+		return updateExistingLead(ctx, leadStatusID, existingLeadWithContact, newLead)
 	}
 	existingLeadWithEmail, err := leadByFilter(ctx, bson.M{"email": newLead.Email})
 	if err == nil {
 		newLead.Meta[0].Meta = append(newLead.Meta[0].Meta, models.KeyValue{Key: "email", Value: newLead.Email})
-		return e.updateExistingLead(ctx, existingLeadWithEmail, newLead, rsp)
+		return updateExistingLead(ctx, leadStatusID, existingLeadWithEmail, newLead)
 	}
+	log.Info("before create lead")
 	// Create a new lead if not existing
 	_, err = createLead(ctx, newLead)
 	if err != nil {
 		log.Error(err)
-		return e.failure(err.Error(), rsp)
+		leadStatusCaptureError(ctx, leadStatusID, err)
 	}
-	rsp.Message = constants.LeadAdded
-	rsp.Status = true
-	return nil
+	return leadStatusCaptureSuccess(ctx, leadStatusID)
 }
 
-func (e *NewLeadService) updateExistingLead(ctx context.Context, existingLead models.Leads, newLead models.Leads, rsp *leads.NewLeadResponse) error {
+func updateExistingLead(ctx context.Context, leadStatusID primitive.ObjectID, existingLead models.Leads, newLead models.Leads) error {
 	existingLead.LeadSource = append(existingLead.LeadSource, newLead.LeadSource...)
 	existingLead.Meta = append(existingLead.Meta, newLead.Meta...)
 	existingLead.TemplateValues = append(existingLead.TemplateValues, newLead.TemplateValues...)
+	log.Info("before update exising lead")
 	updateData := bson.D{
 		{"$set", bson.D{
 			{"leadSource", existingLead.LeadSource},
@@ -75,15 +154,13 @@ func (e *NewLeadService) updateExistingLead(ctx context.Context, existingLead mo
 	_, err := updateLead(ctx, existingLead.ID, updateData)
 	if err != nil {
 		log.Error(err)
+		leadStatusCaptureError(ctx, leadStatusID, err)
 		return fmt.Errorf("failed to add new lead. details: %s", err.Error())
 	}
-
-	rsp.Message = constants.LeadAdded
-	rsp.Status = true
-	return nil
+	return leadStatusCaptureSuccess(ctx, leadStatusID)
 }
 
-func (e *NewLeadService) validateLead(req *leads.NewLeadRequest) []string {
+func (e *LeadService) validateLead(req *leads.NewLeadRequest) []string {
 	validationFailures := []string{}
 	if !utilities.ValidateString(req.FirstName) {
 		validationFailures = append(validationFailures, constants.EmptyFirstName)
@@ -108,13 +185,7 @@ func (e *NewLeadService) validateLead(req *leads.NewLeadRequest) []string {
 	return validationFailures
 }
 
-func (e *NewLeadService) failure(message string, rsp *leads.NewLeadResponse) error {
-	rsp.Message = message
-	rsp.Status = false
-	return nil
-}
-
-func (e *NewLeadService) validateSourceAccess(ctx context.Context, campaignCreator primitive.ObjectID, sourceTag string) error {
+func validateSourceAccess(ctx context.Context, campaignCreator primitive.ObjectID, sourceTag string) error {
 	// TO_DO: Validate if a lead creator has access to lead source
 	user, err := userByID(ctx, campaignCreator.Hex())
 	if err != nil {
@@ -136,14 +207,14 @@ func (e *NewLeadService) validateSourceAccess(ctx context.Context, campaignCreat
 	return nil
 }
 
-func (e *NewLeadService) lead(ctx context.Context, req *leads.NewLeadRequest) (models.Leads, error) {
+func leadFromLeadStatus(ctx context.Context, req models.LeadStatus) (models.Leads, error) {
 	newLead := models.Leads{}
 	newLead.Contact = req.Contact
 	newLead.Email = req.Email
 	newLead.FirstName = req.FirstName
 	newLead.LastName = req.LastName
 
-	if e.preExistingLead(ctx, req) {
+	if preExistingLead(ctx, req) {
 		return newLead, fmt.Errorf("lead already captured")
 	}
 
@@ -153,10 +224,11 @@ func (e *NewLeadService) lead(ctx context.Context, req *leads.NewLeadRequest) (m
 		return newLead, err
 	}
 	newLead.CampaignID = campaign.ID
-	err = e.validateSourceAccess(ctx, campaign.CreatedBy, req.Source)
+	err = validateSourceAccess(ctx, campaign.CreatedBy, req.LeadSource)
 	if err != nil {
 		return newLead, err
 	}
+	log.Info("lead verifed")
 	// Template from campaign
 	templateID := campaign.TemplateID.Hex()
 	leadTemplate, err := leadTemplateByID(ctx, templateID)
@@ -168,10 +240,10 @@ func (e *NewLeadService) lead(ctx context.Context, req *leads.NewLeadRequest) (m
 	// TO_DO: validate lead template value types
 	// Validating lead template keys
 	invalidTemplateKeys := []string{}
-	leadTemplateValues := models.SourceWithKeyValue{LeadSource: req.Source, Meta: []models.KeyValue{}}
+	leadTemplateValues := models.SourceWithKeyValue{LeadSource: req.LeadSource, Meta: []models.KeyValue{}}
 	for mi := 0; mi < len(req.TemplateValues); mi++ {
 		templateKey := req.TemplateValues[mi].Key
-		if !e.isTemplateKey(leadTemplate, templateKey) {
+		if !isTemplateKey(leadTemplate, templateKey) {
 			invalidTemplateKeys = append(invalidTemplateKeys, templateKey)
 		}
 		leadTemplateValues.Meta = append(leadTemplateValues.Meta, models.KeyValue{Key: templateKey, Value: req.TemplateValues[mi].Value})
@@ -182,8 +254,8 @@ func (e *NewLeadService) lead(ctx context.Context, req *leads.NewLeadRequest) (m
 	newLead.TemplateValues = append([]models.SourceWithKeyValue{}, leadTemplateValues)
 	newLead.TemplateID = campaign.TemplateID
 
-	newLead.LeadSource = append([]string{}, req.Source)
-	leadMeta := models.SourceWithKeyValue{LeadSource: req.Source, Meta: []models.KeyValue{}}
+	newLead.LeadSource = append([]string{}, req.LeadSource)
+	leadMeta := models.SourceWithKeyValue{LeadSource: req.LeadSource, Meta: []models.KeyValue{}}
 	for mi := 0; mi < len(req.Meta); mi++ {
 		leadMeta.Meta = append(leadMeta.Meta, models.KeyValue{Key: req.Meta[mi].Key, Value: req.Meta[mi].Value})
 	}
@@ -195,7 +267,7 @@ func (e *NewLeadService) lead(ctx context.Context, req *leads.NewLeadRequest) (m
 	return newLead, nil
 }
 
-func (e *NewLeadService) isTemplateKey(leadTemplate lead_template_models.LeadTemplate, key string) bool {
+func isTemplateKey(leadTemplate lead_template_models.LeadTemplate, key string) bool {
 	if len(leadTemplate.KeyValueTypes) == 0 {
 		return false
 	}
@@ -208,11 +280,11 @@ func (e *NewLeadService) isTemplateKey(leadTemplate lead_template_models.LeadTem
 	return false
 }
 
-func (e *NewLeadService) preExistingLead(ctx context.Context, req *leads.NewLeadRequest) bool {
+func preExistingLead(ctx context.Context, req models.LeadStatus) bool {
 	filter := bson.M{
 		"contact":    req.Contact,
 		"email":      req.Email,
-		"leadSource": req.Source,
+		"leadSource": req.LeadSource,
 	}
 	_, err := leadByFilter(ctx, filter)
 	if err != nil {
@@ -238,6 +310,18 @@ func leadByFilter(ctx context.Context, filter interface{}) (models.Leads, error)
 func createLead(ctx context.Context, newlead models.Leads) (*mongo.InsertOneResult, error) {
 	helper := db.Leads(ctx)
 	return helper.InsertOne(ctx, newlead)
+}
+
+func createLeadStatus(ctx context.Context, newlead models.LeadStatus) (*mongo.InsertOneResult, error) {
+	helper := db.LeadStatus(ctx)
+	newlead.CreatedOn = time.Now()
+	newlead.Status = models.Processing
+	return helper.InsertOne(ctx, newlead)
+}
+
+func updateLeadStatus(ctx context.Context, leadStatusID primitive.ObjectID, updateFieldAndValues interface{}) (*mongo.UpdateResult, error) {
+	helper := db.LeadStatus(ctx)
+	return helper.UpdateOne(ctx, bson.M{"_id": leadStatusID}, updateFieldAndValues)
 }
 
 func updateLead(ctx context.Context, leadID primitive.ObjectID, updateFieldAndValues interface{}) (*mongo.UpdateResult, error) {

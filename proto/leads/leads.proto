@@ -4,6 +4,8 @@ package go.micro.service.leads;
 
 service Leads {
 	rpc NewLead(NewLeadRequest) returns (NewLeadResponse) {}
+	rpc NewLeadQueued(NewLeadRequest) returns (NewLeadResponse) {}
+	rpc NewLeadByLeadStatusID(NewLeadEvent) returns (NewLeadResponse) {}
 }
 
 message NewLeadRequest {
@@ -24,4 +26,8 @@ message NewLeadRequest {
 message NewLeadResponse {
 	string message = 1;
 	bool status = 2;
+}
+
+message NewLeadEvent {
+	string leadStatusId = 1;
 }
