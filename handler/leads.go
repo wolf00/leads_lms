@@ -37,6 +37,7 @@ func (e *LeadsRequestHandler) NewLead(ctx context.Context, req *leads.NewLeadReq
 	return nil
 }
 
+// NewLeadQueued ...
 func (e *LeadsRequestHandler) NewLeadQueued(ctx context.Context, req *leads.NewLeadRequest, rsp *leads.NewLeadResponse) error {
 	newLeadPublisher, ok := client.NewLeadPublisherFromContext(ctx)
 	if !ok {
