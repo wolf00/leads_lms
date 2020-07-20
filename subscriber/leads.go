@@ -6,7 +6,7 @@ import (
 	"github.com/micro/go-micro/v2"
 	log "github.com/micro/go-micro/v2/logger"
 
-	// "github.com/micro/go-plugins/registry/consul/v2"
+	"github.com/micro/go-plugins/registry/consul/v2"
 	leads "github.com/wolf00/leads_lms/proto/leads"
 )
 
@@ -15,10 +15,10 @@ type NewLeadHandler struct{}
 func (e *NewLeadHandler) HandleNewLead(ctx context.Context, newLead *leads.NewLeadEvent) error {
 	log.Info("Function Received message: ", newLead.LeadStatusId)
 	// Consul registry
-	// registry := consul.NewRegistry()
+	registry := consul.NewRegistry()
 
 	service := micro.NewService(
-	// micro.Registry(registry),
+		micro.Registry(registry),
 	)
 	service.Init()
 
