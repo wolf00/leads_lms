@@ -2,6 +2,8 @@ syntax = "proto3";
 
 package go.micro.service.leads;
 
+option go_package = "proto/leads;leads";
+
 service Leads {
 	rpc NewLead(NewLeadRequest) returns (NewLeadResponse) {}
 	rpc NewLeadQueued(NewLeadRequest) returns (NewLeadResponse) {}

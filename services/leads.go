@@ -43,7 +43,7 @@ func leadStatusCaptureError(ctx context.Context, leadStatusID primitive.ObjectID
 }
 
 func leadStatusCaptureSuccess(ctx context.Context, leadStatusID primitive.ObjectID) error {
-	return leadStatusCapture(ctx, leadStatusID, models.Failed, "lead camptured successfully", nil)
+	return leadStatusCapture(ctx, leadStatusID, models.Success, "lead captured successfully", nil)
 }
 
 func leadStatusCapture(ctx context.Context, leadStatusID primitive.ObjectID, status string, message string, stacktrace error) error {
